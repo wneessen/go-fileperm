@@ -38,47 +38,47 @@ const (
 )
 
 // UserWritable returns true if the filepath is writable by the current user
-func UserWritable(f string) (bool, error) {
+func UserWritable(f string) bool {
 	fs, err := os.Lstat(f)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return fs.Mode().Perm()&OS_USER_W != 0, nil
+	return fs.Mode().Perm()&OS_USER_W != 0
 }
 
 // UserReadable returns true if the filepath is readable by the current user
-func UserReadable(f string) (bool, error) {
+func UserReadable(f string) bool {
 	fs, err := os.Lstat(f)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return fs.Mode().Perm()&OS_USER_R != 0, nil
+	return fs.Mode().Perm()&OS_USER_R != 0
 }
 
 // UserExecutable returns true if the filepath is executable by the current user
-func UserExecutable(f string) (bool, error) {
+func UserExecutable(f string) bool {
 	fs, err := os.Lstat(f)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return fs.Mode().Perm()&OS_USER_X != 0, nil
+	return fs.Mode().Perm()&OS_USER_X != 0
 }
 
 // UserWriteReadable returns true if the filepath is write- and readable by the current user
-func UserWriteReadable(f string) (bool, error) {
+func UserWriteReadable(f string) bool {
 	fs, err := os.Lstat(f)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return fs.Mode().Perm()&OS_USER_RW != 0, nil
+	return fs.Mode().Perm()&OS_USER_RW != 0
 }
 
 // UserWriteReadExecutable returns true if the filepath is write- and read- and executable by the
 // current user
-func UserWriteReadExecutable(f string) (bool, error) {
+func UserWriteReadExecutable(f string) bool {
 	fs, err := os.Lstat(f)
 	if err != nil {
-		return false, err
+		return false
 	}
-	return fs.Mode().Perm()&OS_USER_RWX != 0, nil
+	return fs.Mode().Perm()&OS_USER_RWX != 0
 }
