@@ -1,4 +1,4 @@
-package go_fileperm
+package fileperm
 
 import (
 	"os"
