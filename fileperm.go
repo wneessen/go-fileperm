@@ -1,6 +1,8 @@
 package go_fileperm
 
-import "os"
+import (
+	"os"
+)
 
 const (
 	OS_READ        = 04
@@ -35,11 +37,48 @@ const (
 	OS_ALL_RWX = OS_ALL_RW | OS_GROUP_X
 )
 
-func IsWritable(f string) (bool, error) {
-	fileStat, err := os.Lstat(f)
+// UserWritable returns true if the filepath is writable by the current user
+func UserWritable(f string) (bool, error) {
+	fs, err := os.Lstat(f)
 	if err != nil {
 		return false, err
 	}
-	return fileStat.Mode().Perm()&OS_WRITE != 0, nil
+	return fs.Mode().Perm()&OS_USER_W != 0, nil
+}
 
+// UserReadable returns true if the filepath is readable by the current user
+func UserReadable(f string) (bool, error) {
+	fs, err := os.Lstat(f)
+	if err != nil {
+		return false, err
+	}
+	return fs.Mode().Perm()&OS_USER_R != 0, nil
+}
+
+// UserExecutable returns true if the filepath is executable by the current user
+func UserExecutable(f string) (bool, error) {
+	fs, err := os.Lstat(f)
+	if err != nil {
+		return false, err
+	}
+	return fs.Mode().Perm()&OS_USER_X != 0, nil
+}
+
+// UserWriteReadable returns true if the filepath is write- and readable by the current user
+func UserWriteReadable(f string) (bool, error) {
+	fs, err := os.Lstat(f)
+	if err != nil {
+		return false, err
+	}
+	return fs.Mode().Perm()&OS_USER_RW != 0, nil
+}
+
+// UserWriteReadExecutable returns true if the filepath is write- and read- and executable by the
+// current user
+func UserWriteReadExecutable(f string) (bool, error) {
+	fs, err := os.Lstat(f)
+	if err != nil {
+		return false, err
+	}
+	return fs.Mode().Perm()&OS_USER_RWX != 0, nil
 }
