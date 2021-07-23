@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	fup, err := fileperm.NewFileUserPerm("/var/tmp/foo.txt")
+	fup, err := fileperm.New("/var/tmp/foo.txt")
 	if err != nil {
 		fmt.Print("ERROR:", err)
 		os.Exit(1)
@@ -39,7 +39,7 @@ import (
 )
 
 func main() {
-	fup, err := fileperm.NewFileUserPerm("/var/tmp/foo.txt")
+	fup, err := fileperm.New("/var/tmp/foo.txt")
 	if err != nil {
 		fmt.Print("ERROR:", err)
 		os.Exit(1)
