@@ -10,7 +10,7 @@ import (
 )
 
 // VERSION of go-fileperm, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.1.2"
+const VERSION = "0.1.3"
 
 // Bitmask to represent different access level of the file in question
 const (
