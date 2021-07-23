@@ -1,5 +1,7 @@
 # fileperm - Check file permissions based on the current user in Go
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/wneessen/go-fileperm.svg)](https://pkg.go.dev/github.com/wneessen/go-fileperm) [![Go Report Card](https://goreportcard.com/badge/github.com/wneessen/go-fileperm)](https://goreportcard.com/report/github.com/wneessen/go-fileperm) 
+
 In Go it is not trivial to check what permissions a specific file has to the current user. This module provides a small
 library to work around this.
 
