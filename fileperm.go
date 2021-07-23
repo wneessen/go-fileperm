@@ -8,6 +8,9 @@ import (
 	"syscall"
 )
 
+// VERSION of go-fileperm, follows Semantic Versioning. (http://semver.org/)
+const VERSION = "0.1.1"
+
 // Bitmask to represent different access level of the file in question
 const (
 	OS_READ        = 04
@@ -52,9 +55,9 @@ type FilePermUser struct {
 	CurUserGids []int64
 }
 
-// NewFileUserPerm returns a new FilePermUser struct. NewFileUserPerm expects a file path string
+// New returns a new FilePermUser struct. NewFileUserPerm expects a file path string
 // as input and will return an error if the initial operations failed
-func NewFileUserPerm(f string) (FilePermUser, error) {
+func New(f string) (FilePermUser, error) {
 	fpuObj := FilePermUser{Path: f}
 	fs, err := os.Lstat(fpuObj.Path)
 	if fs == nil {
