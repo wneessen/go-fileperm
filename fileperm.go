@@ -9,7 +9,7 @@ import (
 )
 
 // VERSION of go-fileperm, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.1.1"
+const VERSION = "0.1.2"
 
 // Bitmask to represent different access level of the file in question
 const (
@@ -75,19 +75,6 @@ func New(f string) (FilePermUser, error) {
 	return fpuObj, nil
 }
 
-// UserWritable returns true if the filepath is writable by the current user
-func (f *FilePermUser) UserWritable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_W != 0
-	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_W != 0
-		}
-	}
-	return f.Stat.Mode().Perm()&OS_OTH_W != 0
-}
-
 // UserReadable returns true if the filepath is readable by the current user
 func (f *FilePermUser) UserReadable() bool {
 	if int64(f.Uid) == f.CurUserUid {
@@ -99,6 +86,19 @@ func (f *FilePermUser) UserReadable() bool {
 		}
 	}
 	return f.Stat.Mode().Perm()&OS_OTH_R != 0
+}
+
+// UserWritable returns true if the filepath is writable by the current user
+func (f *FilePermUser) UserWritable() bool {
+	if int64(f.Uid) == f.CurUserUid {
+		return f.Stat.Mode().Perm()&OS_USER_W != 0
+	}
+	for _, gId := range f.CurUserGids {
+		if int64(f.Gid) == gId {
+			return f.Stat.Mode().Perm()&OS_GROUP_W != 0
+		}
+	}
+	return f.Stat.Mode().Perm()&OS_OTH_W != 0
 }
 
 // UserExecutable returns true if the filepath is executable by the current user
@@ -116,29 +116,13 @@ func (f *FilePermUser) UserExecutable() bool {
 
 // UserWriteReadable returns true if the filepath is write- and readable by the current user
 func (f *FilePermUser) UserWriteReadable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_RW != 0
-	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_RW != 0
-		}
-	}
-	return f.Stat.Mode().Perm()&OS_OTH_RW != 0
+	return f.UserReadable() && f.UserWritable()
 }
 
 // UserWriteReadExecutable returns true if the filepath is write- and read- and executable by the
 // current user
 func (f *FilePermUser) UserWriteReadExecutable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_RWX != 0
-	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_RWX != 0
-		}
-	}
-	return f.Stat.Mode().Perm()&OS_OTH_RWX != 0
+	return f.UserReadable() && f.UserWritable() && f.UserExecutable()
 }
 
 // getUidGid retrieves the owner id and group id of the current FilePermUser structs file
