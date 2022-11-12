@@ -1,3 +1,4 @@
+//go:build !windows && !plan9
 // +build !windows,!plan9
 
 package fileperm
@@ -9,66 +10,48 @@ import (
 	"syscall"
 )
 
-// VERSION of go-fileperm, follows Semantic Versioning. (http://semver.org/)
-const VERSION = "0.1.3"
-
-// Bitmask to represent different access level of the file in question
+// List of different OS permission bits
 const (
-	OS_READ        = 04
-	OS_WRITE       = 02
-	OS_EX          = 01
-	OS_USER_SHIFT  = 6
-	OS_GROUP_SHIFT = 3
-	OS_OTH_SHIFT   = 0
+	OsRead       = 0o4
+	OsWrite      = 0o2
+	OsEx         = 0o1
+	OsUserShift  = 6
+	OsGroupShift = 3
+	OsOthShift   = 0
 
-	OS_USER_R   = OS_READ << OS_USER_SHIFT
-	OS_USER_W   = OS_WRITE << OS_USER_SHIFT
-	OS_USER_X   = OS_EX << OS_USER_SHIFT
-	OS_USER_RW  = OS_USER_R | OS_USER_W
-	OS_USER_RWX = OS_USER_RW | OS_USER_X
+	OsUserR = OsRead << OsUserShift
+	OsUserW = OsWrite << OsUserShift
+	OsUserX = OsEx << OsUserShift
 
-	OS_GROUP_R   = OS_READ << OS_GROUP_SHIFT
-	OS_GROUP_W   = OS_WRITE << OS_GROUP_SHIFT
-	OS_GROUP_X   = OS_EX << OS_GROUP_SHIFT
-	OS_GROUP_RW  = OS_GROUP_R | OS_GROUP_W
-	OS_GROUP_RWX = OS_GROUP_RW | OS_GROUP_X
+	OsGroupR = OsRead << OsGroupShift
+	OsGroupW = OsWrite << OsGroupShift
+	OsGroupX = OsEx << OsGroupShift
 
-	OS_OTH_R   = OS_READ << OS_OTH_SHIFT
-	OS_OTH_W   = OS_WRITE << OS_OTH_SHIFT
-	OS_OTH_X   = OS_EX << OS_OTH_SHIFT
-	OS_OTH_RW  = OS_OTH_R | OS_OTH_W
-	OS_OTH_RWX = OS_OTH_RW | OS_OTH_X
-
-	OS_ALL_R   = OS_USER_R | OS_GROUP_R | OS_OTH_R
-	OS_ALL_W   = OS_USER_W | OS_GROUP_W | OS_OTH_W
-	OS_ALL_X   = OS_USER_X | OS_GROUP_X | OS_OTH_X
-	OS_ALL_RW  = OS_ALL_R | OS_ALL_W
-	OS_ALL_RWX = OS_ALL_RW | OS_GROUP_X
+	OsOthR = OsRead << OsOthShift
+	OsOthW = OsWrite << OsOthShift
+	OsOthX = OsEx << OsOthShift
 )
 
-// FilePermUser implements the main struct of the fileperm packages. All methods are based on it
-type FilePermUser struct {
+// PermUser implements the main struct of the fileperm packages. All methods are based on it
+type PermUser struct {
 	Path        string
 	Stat        os.FileInfo
-	Uid         uint32
-	Gid         uint32
-	CurUserUid  int64
-	CurUserGids []int64
+	UID         uint32
+	GID         uint32
+	CurUserUID  int64
+	CurUserGIDs []int64
 }
 
-// New returns a new FilePermUser struct. NewFileUserPerm expects a file path string
+// New returns a new PermUser struct. NewFileUserPerm expects a file path string
 // as input and will return an error if the initial operations failed
-func New(f string) (FilePermUser, error) {
-	fpuObj := FilePermUser{Path: f}
+func New(f string) (PermUser, error) {
+	fpuObj := PermUser{Path: f}
 	fs, err := os.Lstat(fpuObj.Path)
 	if fs == nil {
 		return fpuObj, err
 	}
 	fpuObj.Stat = fs
-
-	if err := fpuObj.getUidGid(); err != nil {
-		return fpuObj, err
-	}
+	fpuObj.getUIDGID()
 
 	if err := fpuObj.getCurUserIds(); err != nil {
 		return fpuObj, err
@@ -77,68 +60,134 @@ func New(f string) (FilePermUser, error) {
 }
 
 // UserReadable returns true if the filepath is readable by the current user
-func (f *FilePermUser) UserReadable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_R != 0
+func (p *PermUser) UserReadable() bool {
+	if p.Stat.Mode().Perm()&OsOthR != 0 {
+		return true
 	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_R != 0
-		}
+	if p.isInGroup() && p.Stat.Mode().Perm()&OsGroupR != 0 {
+		return true
 	}
-	return f.Stat.Mode().Perm()&OS_OTH_R != 0
+	if p.isOwner() && p.Stat.Mode().Perm()&OsUserR != 0 {
+		return true
+	}
+	return false
 }
 
 // UserWritable returns true if the filepath is writable by the current user
-func (f *FilePermUser) UserWritable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_W != 0
+func (p *PermUser) UserWritable() bool {
+	if p.Stat.Mode().Perm()&OsOthW != 0 {
+		return true
 	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_W != 0
-		}
+	if p.isInGroup() && p.Stat.Mode().Perm()&OsGroupW != 0 {
+		return true
 	}
-	return f.Stat.Mode().Perm()&OS_OTH_W != 0
+	if p.isOwner() && p.Stat.Mode().Perm()&OsUserW != 0 {
+		return true
+	}
+	return false
 }
 
 // UserExecutable returns true if the filepath is executable by the current user
-func (f *FilePermUser) UserExecutable() bool {
-	if int64(f.Uid) == f.CurUserUid {
-		return f.Stat.Mode().Perm()&OS_USER_X != 0
+func (p *PermUser) UserExecutable() bool {
+	if p.Stat.Mode().Perm()&OsOthX != 0 {
+		return true
 	}
-	for _, gId := range f.CurUserGids {
-		if int64(f.Gid) == gId {
-			return f.Stat.Mode().Perm()&OS_GROUP_X != 0
-		}
+	if p.isInGroup() && p.Stat.Mode().Perm()&OsGroupX != 0 {
+		return true
 	}
-	return f.Stat.Mode().Perm()&OS_OTH_X != 0
+	if p.isOwner() && p.Stat.Mode().Perm()&OsUserX != 0 {
+		return true
+	}
+	return false
 }
 
 // UserWriteReadable returns true if the filepath is write- and readable by the current user
-func (f *FilePermUser) UserWriteReadable() bool {
-	return f.UserReadable() && f.UserWritable()
+func (p *PermUser) UserWriteReadable() bool {
+	if p.Stat.Mode().Perm()&OsOthR != 0 && p.Stat.Mode().Perm()&OsOthW != 0 {
+		return true
+	}
+	if p.isInGroup() && (p.Stat.Mode().Perm()&OsGroupR != 0 && p.Stat.Mode().Perm()&OsGroupW != 0) {
+		return true
+	}
+	if p.isOwner() && (p.Stat.Mode().Perm()&OsUserR != 0 && p.Stat.Mode().Perm()&OsUserW != 0) {
+		return true
+	}
+	return false
+}
+
+// UserWriteExecutable returns true if the filepath is write- and executable by the current user
+func (p *PermUser) UserWriteExecutable() bool {
+	if p.Stat.Mode().Perm()&OsOthX != 0 && p.Stat.Mode().Perm()&OsOthW != 0 {
+		return true
+	}
+	if p.isInGroup() && (p.Stat.Mode().Perm()&OsGroupX != 0 && p.Stat.Mode().Perm()&OsGroupW != 0) {
+		return true
+	}
+	if p.isOwner() && (p.Stat.Mode().Perm()&OsUserX != 0 && p.Stat.Mode().Perm()&OsUserW != 0) {
+		return true
+	}
+	return false
+}
+
+// UserReadExecutable returns true if the filepath is read- and executable by the current user
+func (p *PermUser) UserReadExecutable() bool {
+	if p.Stat.Mode().Perm()&OsOthR != 0 && p.Stat.Mode().Perm()&OsOthX != 0 {
+		return true
+	}
+	if p.isInGroup() && (p.Stat.Mode().Perm()&OsGroupR != 0 && p.Stat.Mode().Perm()&OsGroupX != 0) {
+		return true
+	}
+	if p.isOwner() && (p.Stat.Mode().Perm()&OsUserR != 0 && p.Stat.Mode().Perm()&OsUserX != 0) {
+		return true
+	}
+	return false
 }
 
 // UserWriteReadExecutable returns true if the filepath is write- and read- and executable by the
 // current user
-func (f *FilePermUser) UserWriteReadExecutable() bool {
-	return f.UserReadable() && f.UserWritable() && f.UserExecutable()
+func (p *PermUser) UserWriteReadExecutable() bool {
+	if p.Stat.Mode().Perm()&OsOthR != 0 && p.Stat.Mode().Perm()&OsOthW != 0 &&
+		p.Stat.Mode().Perm()&OsOthX != 0 {
+		return true
+	}
+	if p.isInGroup() && (p.Stat.Mode().Perm()&OsGroupR != 0 && p.Stat.Mode().Perm()&OsGroupW != 0 &&
+		p.Stat.Mode().Perm()&OsGroupX != 0) {
+		return true
+	}
+	if p.isOwner() && (p.Stat.Mode().Perm()&OsUserR != 0 && p.Stat.Mode().Perm()&OsUserW != 0 &&
+		p.Stat.Mode().Perm()&OsUserX != 0) {
+		return true
+	}
+	return false
 }
 
-// getUidGid retrieves the owner id and group id of the current FilePermUser structs file
-func (f *FilePermUser) getUidGid() error {
-	fsSys := f.Stat.Sys().(*syscall.Stat_t)
-	if fsSys != nil {
-		f.Uid = fsSys.Uid
-		f.Gid = fsSys.Gid
+// isOwner returns true if the file in question is owned by the current user
+func (p *PermUser) isOwner() bool {
+	return int64(p.UID) == p.CurUserUID
+}
+
+// isInGroup returns true if the current user is part the files group
+func (p *PermUser) isInGroup() bool {
+	for _, gID := range p.CurUserGIDs {
+		if int64(p.GID) == gID {
+			return true
+		}
 	}
-	return nil
+	return false
+}
+
+// getUIDGID retrieves the owner id and group id of the current PermUser structs file
+func (p *PermUser) getUIDGID() {
+	fsSys := p.Stat.Sys().(*syscall.Stat_t)
+	if fsSys != nil {
+		p.UID = fsSys.Uid
+		p.GID = fsSys.Gid
+	}
 }
 
 // getCurUserIds retrieves the userid and groupids of the processes current user and stores them
-// in the FilePermUser struct
-func (f *FilePermUser) getCurUserIds() error {
+// in the PermUser struct
+func (p *PermUser) getCurUserIds() error {
 	curUser, err := user.Current()
 	if err != nil {
 		return err
@@ -147,7 +196,7 @@ func (f *FilePermUser) getCurUserIds() error {
 	if err != nil {
 		return err
 	}
-	f.CurUserUid = uidInt
+	p.CurUserUID = uidInt
 
 	userGroups, err := curUser.GroupIds()
 	if err != nil {
@@ -158,7 +207,7 @@ func (f *FilePermUser) getCurUserIds() error {
 		if err != nil {
 			return err
 		}
-		f.CurUserGids = append(f.CurUserGids, gidInt)
+		p.CurUserGIDs = append(p.CurUserGIDs, gidInt)
 	}
 	return nil
 }

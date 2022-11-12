@@ -7,7 +7,7 @@ library to work around this.
 
 ## Usage
 
-First create a new `FileUserPerm` struct:
+First create a new `UserPerm` struct:
 
 ```go
 package main
@@ -15,13 +15,14 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"github.com/wneessen/go-fileperm"
 )
 
 func main() {
-	fup, err := fileperm.New("/var/tmp/foo.txt")
+	up, err := fileperm.New("/var/tmp/foo.txt")
 	if err != nil {
-		fmt.Print("ERROR:", err)
+		fmt.Print("failed to create new filepe:", err)
 		os.Exit(1)
 	}
 }
@@ -35,15 +36,16 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"github.com/wneessen/go-fileperm"
 )
 
 func main() {
-	fup, err := fileperm.New("/var/tmp/foo.txt")
+	up, err := fileperm.New("/var/tmp/foo.txt")
 	if err != nil {
 		fmt.Print("ERROR:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("User can write to file: %v", fup.UserWritable())
+	fmt.Printf("User can write to file: %t", up.UserWritable())
 }
 ```
