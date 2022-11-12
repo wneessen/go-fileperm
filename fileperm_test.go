@@ -166,6 +166,7 @@ func TestFuncs(t *testing.T) {
 }
 
 func BenchmarkPermUser_UserReadable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -185,6 +186,7 @@ func BenchmarkPermUser_UserReadable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserWritable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -204,6 +206,7 @@ func BenchmarkPermUser_UserWritable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserExecutable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -223,6 +226,7 @@ func BenchmarkPermUser_UserExecutable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserWriteReadable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -242,6 +246,7 @@ func BenchmarkPermUser_UserWriteReadable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserWriteExecutable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -261,6 +266,7 @@ func BenchmarkPermUser_UserWriteExecutable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserReadExecutable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {
@@ -280,6 +286,7 @@ func BenchmarkPermUser_UserReadExecutable(b *testing.B) {
 }
 
 func BenchmarkPermUser_UserWriteReadExecutable(b *testing.B) {
+	b.ReportAllocs()
 	testFile, err := os.CreateTemp("", "go-fileperm_testing")
 	defer func() { _ = os.Remove(testFile.Name()) }()
 	if err != nil {

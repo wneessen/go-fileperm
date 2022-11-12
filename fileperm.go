@@ -58,7 +58,9 @@ func New(f string) (PermUser, error) {
 		return fpuObj, err
 	}
 	fpuObj.Stat = fs
-	fpuObj.getUIDGID()
+	uid, gid := getUIDGID(fpuObj.Stat)
+	fpuObj.UID = uid
+	fpuObj.GID = gid
 
 	if err := fpuObj.getCurUserIds(); err != nil {
 		return fpuObj, err
@@ -183,15 +185,6 @@ func (p *PermUser) isInGroup() bool {
 	return false
 }
 
-// getUIDGID retrieves the owner id and group id of the current PermUser structs file
-func (p *PermUser) getUIDGID() {
-	fsSys := p.Stat.Sys().(*syscall.Stat_t)
-	if fsSys != nil {
-		p.UID = fsSys.Uid
-		p.GID = fsSys.Gid
-	}
-}
-
 // getCurUserIds retrieves the userid and groupids of the processes current user and stores them
 // in the PermUser struct
 func (p *PermUser) getCurUserIds() error {
@@ -217,4 +210,14 @@ func (p *PermUser) getCurUserIds() error {
 		p.CurUserGIDs = append(p.CurUserGIDs, gidInt)
 	}
 	return nil
+}
+
+// getUIDGID retrieves the owner id and group id of the current PermUser structs file
+// Please note: due to the nature of the syscall, this does not work on Windows and Plan9
+func getUIDGID(s os.FileInfo) (uid, gid uint32) {
+	fs, ok := s.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, 0
+	}
+	return fs.Uid, fs.Gid
 }
