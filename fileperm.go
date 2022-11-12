@@ -1,5 +1,12 @@
+// SPDX-FileCopyrightText: 2022 Winni Neessen <winni@neessen.dev>
+//
+// SPDX-License-Identifier: MIT
 //go:build !windows && !plan9
 // +build !windows,!plan9
+
+// SPDX-FileCopyrightText: 2022 Winni Neessen <winni@neessen.dev>
+//
+// SPDX-License-Identifier: MIT
 
 package fileperm
 
